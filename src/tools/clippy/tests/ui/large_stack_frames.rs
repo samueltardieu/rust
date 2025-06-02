@@ -3,18 +3,12 @@
 #![allow(unused)]
 #![warn(clippy::large_stack_frames)]
 
-
 use std::hint::black_box;
 
 fn generic<T: Default>() {
     let x = T::default();
     black_box(&x);
 }
-
-
-
-
-
 
 struct ArrayDefault<const N: usize>([u8; N]);
 
