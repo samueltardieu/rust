@@ -1,6 +1,7 @@
 //@ check-pass
 
-#![feature(const_trait_impl, const_ops)]
+#![feature(const_arith_ops)]
+#![feature(const_trait_impl)]
 
 use std::marker::PhantomData;
 
