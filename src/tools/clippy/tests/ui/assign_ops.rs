@@ -76,7 +76,6 @@ impl MulAssign<i64> for Wrap {
     }
 }
 
-#[clippy::msrv = "1.88.0"]
 mod issue14871 {
 
     use std::ops::{Add, AddAssign};
@@ -84,6 +83,18 @@ mod issue14871 {
     pub trait Number: Copy + Add<Self, Output = Self> + AddAssign {
         const ZERO: Self;
         const ONE: Self;
+
+        fn non_constant(value: usize) -> Self {
+            let mut res = Self::ZERO;
+            let mut count = 0;
+            while count < value {
+                res = res + Self::ONE;
+                //~^ assign_op_pattern
+                count = count + 1;
+                //~^ assign_op_pattern
+            }
+            res
+        }
     }
 
     #[const_trait]
@@ -100,9 +111,30 @@ mod issue14871 {
             let mut count = 0;
             while count < value {
                 res = res + Self::ONE;
-                count += 1;
+                count = count + 1;
+                //~^ assign_op_pattern
             }
             res
         }
+    }
+
+    pub struct S;
+
+    impl const std::ops::Add for S {
+        type Output = S;
+        fn add(self, _rhs: S) -> S {
+            S
+        }
+    }
+
+    impl const std::ops::AddAssign for S {
+        fn add_assign(&mut self, rhs: S) {
+        }
+    }
+
+    const fn do_add() {
+        let mut s = S;
+        s = s + S;
+        //~^ assign_op_pattern
     }
 }
