@@ -661,10 +661,6 @@ impl HirEqInterExpr<'_, '_, '_> {
     }
 
     fn eq_const_arg(&mut self, left: &ConstArg<'_>, right: &ConstArg<'_>) -> bool {
-        if !self.check_ctxt(left.span.ctxt(), right.span.ctxt()) {
-            return false;
-        }
-
         match (&left.kind, &right.kind) {
             (ConstArgKind::Path(l_p), ConstArgKind::Path(r_p)) => self.eq_qpath(l_p, r_p),
             (ConstArgKind::Anon(l_an), ConstArgKind::Anon(r_an)) => self.eq_body(l_an.body, r_an.body),
@@ -675,26 +671,19 @@ impl HirEqInterExpr<'_, '_, '_> {
                         .iter()
                         .zip(*inits_b)
                         .all(|(init_a, init_b)| self.eq_const_arg(init_a.expr, init_b.expr))
-            }
+            },
             (ConstArgKind::TupleCall(path_a, args_a), ConstArgKind::TupleCall(path_b, args_b)) => {
                 self.eq_qpath(path_a, path_b)
                     && args_a
                         .iter()
                         .zip(*args_b)
                         .all(|(arg_a, arg_b)| self.eq_const_arg(arg_a, arg_b))
-            }
-            (ConstArgKind::Tup(args_a), ConstArgKind::Tup(args_b)) => {
-                args_a
-                    .iter()
-                    .zip(*args_b)
-                    .all(|(arg_a, arg_b)| self.eq_const_arg(arg_a, arg_b))
-            }
+            },
             // Use explicit match for now since ConstArg is undergoing flux.
             (
                 ConstArgKind::Path(..)
                 | ConstArgKind::Anon(..)
                 | ConstArgKind::TupleCall(..)
-                | ConstArgKind::Tup(..)
                 | ConstArgKind::Infer(..)
                 | ConstArgKind::Struct(..)
                 | ConstArgKind::Error(..),
@@ -1567,11 +1556,6 @@ impl<'a, 'tcx> SpanlessHash<'a, 'tcx> {
             },
             ConstArgKind::TupleCall(path, args) => {
                 self.hash_qpath(path);
-                for arg in *args {
-                    self.hash_const_arg(arg);
-                }
-            },
-            ConstArgKind::Tup(args) => {
                 for arg in *args {
                     self.hash_const_arg(arg);
                 }
