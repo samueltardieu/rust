@@ -662,6 +662,8 @@ impl HirEqInterExpr<'_, '_, '_> {
 
     fn eq_const_arg(&mut self, left: &ConstArg<'_>, right: &ConstArg<'_>) -> bool {
         match (&left.kind, &right.kind) {
+            (ConstArgKind::Tup(l_t), ConstArgKind::Tup(r_t)) =>
+                l_t.len() == r_t.len() && l_t.iter().zip(*r_t).all(|(l_c, r_c)| self.eq_const_arg(*l_c, *r_c)),
             (ConstArgKind::Path(l_p), ConstArgKind::Path(r_p)) => self.eq_qpath(l_p, r_p),
             (ConstArgKind::Anon(l_an), ConstArgKind::Anon(r_an)) => self.eq_body(l_an.body, r_an.body),
             (ConstArgKind::Infer(..), ConstArgKind::Infer(..)) => true,
@@ -682,6 +684,7 @@ impl HirEqInterExpr<'_, '_, '_> {
             // Use explicit match for now since ConstArg is undergoing flux.
             (
                 ConstArgKind::Path(..)
+                | ConstArgKind::Tup(..)
                 | ConstArgKind::Anon(..)
                 | ConstArgKind::TupleCall(..)
                 | ConstArgKind::Infer(..)
@@ -1546,6 +1549,11 @@ impl<'a, 'tcx> SpanlessHash<'a, 'tcx> {
 
     fn hash_const_arg(&mut self, const_arg: &ConstArg<'_>) {
         match &const_arg.kind {
+            ConstArgKind::Tup(tup) => {
+                for arg in *tup {
+                    self.hash_const_arg(*arg);
+                }
+            },
             ConstArgKind::Path(path) => self.hash_qpath(path),
             ConstArgKind::Anon(anon) => self.hash_body(anon.body),
             ConstArgKind::Struct(path, inits) => {
